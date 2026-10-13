@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { Brain } from "lucide-react";
+import { Brain, Loader2 } from "lucide-react";
 
+import { LogoutButton } from "@/components/logout-button";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/server";
 
-export function Header() {
+function HeaderShell({ children }: { children: React.ReactNode }) {
   return (
     <header className="bg-background/80 sticky top-0 z-50 w-full border-b backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
@@ -18,15 +20,48 @@ export function Header() {
         </Link>
 
         <div className="flex items-center gap-2">
+          {children}
+          <ModeToggle />
+        </div>
+      </div>
+    </header>
+  );
+}
+
+export async function Header() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return (
+    <HeaderShell>
+      {user ? (
+        <>
+          <span className="text-muted-foreground hidden text-sm sm:inline">
+            {user.email}
+          </span>
+          <LogoutButton />
+        </>
+      ) : (
+        <>
           <Button asChild>
             <Link href="/sign-up">Sign up</Link>
           </Button>
           <Button asChild variant="outline">
             <Link href="/login">Login</Link>
           </Button>
-          <ModeToggle />
-        </div>
-      </div>
-    </header>
+        </>
+      )}
+    </HeaderShell>
+  );
+}
+
+// Shown while Header is waiting on the user's session.
+export function HeaderSkeleton() {
+  return (
+    <HeaderShell>
+      <Loader2 className="text-muted-foreground size-5 animate-spin" />
+    </HeaderShell>
   );
 }

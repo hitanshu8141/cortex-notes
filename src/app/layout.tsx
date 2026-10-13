@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-import { Header } from "@/components/header";
+import { Header, HeaderSkeleton } from "@/components/header";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-sans",
@@ -34,8 +36,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           enableSystem
           disableTransitionOnChange
         >
-          <Header />
+          <Suspense fallback={<HeaderSkeleton />}>
+            <Header />
+          </Suspense>
           <main className="flex flex-1 flex-col">{children}</main>
+          <Toaster richColors />
         </ThemeProvider>
       </body>
     </html>
