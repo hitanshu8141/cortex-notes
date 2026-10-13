@@ -2,18 +2,9 @@
 
 import { headers } from "next/headers";
 
-import { prisma } from "@/db/prisma";
 import { createClient } from "@/lib/supabase/server";
 
 type ActionResult = { errorMessage: string | null };
-
-async function saveUser(id: string, email: string) {
-  await prisma.user.upsert({
-    where: { id },
-    update: { email },
-    create: { id, email },
-  });
-}
 
 function handleError(error: unknown): ActionResult {
   if (error instanceof Error) return { errorMessage: error.message };
@@ -23,14 +14,11 @@ function handleError(error: unknown): ActionResult {
 export async function loginAction(formData: FormData): Promise<ActionResult> {
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email: formData.get("email") as string,
       password: formData.get("password") as string,
     });
     if (error) throw error;
-
-    // Backfills the row for anyone who signed up before the database existed.
-    await saveUser(data.user.id, data.user.email!);
 
     return { errorMessage: null };
   } catch (error) {
@@ -50,11 +38,9 @@ export async function signUpAction(formData: FormData): Promise<ActionResult> {
     if (error) throw error;
 
     // Supabase returns a user with no identities when the email is already registered.
-    if (!data.user || data.user.identities?.length === 0) {
+    if (data.user?.identities?.length === 0) {
       throw new Error("An account with this email already exists.");
     }
-
-    await saveUser(data.user.id, data.user.email!);
 
     return { errorMessage: null };
   } catch (error) {
