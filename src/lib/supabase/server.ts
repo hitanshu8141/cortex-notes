@@ -29,3 +29,12 @@ export async function createClient() {
     },
   );
 }
+
+// The logged-in Supabase user, or null.
+export async function getUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+}
