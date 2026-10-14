@@ -1,12 +1,10 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { AskAIButton } from "@/components/ask-ai-button";
 import { NewNoteButton } from "@/components/new-note-button";
 import { NoteTextInput } from "@/components/note-text-input";
-import { Button } from "@/components/ui/button";
 import { prisma } from "@/db/prisma";
 import { getUser } from "@/lib/supabase/server";
 
@@ -40,9 +38,6 @@ async function NotesHome({ searchParams }: Pick<PageProps<"/">, "searchParams">)
         <p className="text-muted-foreground max-w-md">
           Your AI-powered second brain.
         </p>
-        <Button asChild size="lg">
-          <Link href="/sign-up">Sign up to get started</Link>
-        </Button>
       </div>
     );
   }
