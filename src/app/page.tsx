@@ -1,10 +1,12 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { AskAIButton } from "@/components/ask-ai-button";
 import { NewNoteButton } from "@/components/new-note-button";
 import { NoteTextInput } from "@/components/note-text-input";
+import { Button } from "@/components/ui/button";
 import { prisma } from "@/db/prisma";
 import { getUser } from "@/lib/supabase/server";
 
@@ -29,13 +31,6 @@ async function NotesHome({ searchParams }: Pick<PageProps<"/">, "searchParams">)
   const user = await getUser();
   const { noteId } = await searchParams;
 
-  const buttons = (
-    <div className="flex items-center justify-end gap-2">
-      <NewNoteButton isLoggedIn={!!user} />
-      <AskAIButton user={user} />
-    </div>
-  );
-
   if (!user) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 text-center">
@@ -43,12 +38,21 @@ async function NotesHome({ searchParams }: Pick<PageProps<"/">, "searchParams">)
           Welcome to Cortex Notes
         </h1>
         <p className="text-muted-foreground max-w-md">
-          Your AI-powered second brain. Log in to start taking notes.
+          Your AI-powered second brain.
         </p>
-        {buttons}
+        <Button asChild size="lg">
+          <Link href="/sign-up">Sign up to get started</Link>
+        </Button>
       </div>
     );
   }
+
+  const buttons = (
+    <div className="flex items-center justify-end gap-2">
+      <NewNoteButton />
+      <AskAIButton user={user} />
+    </div>
+  );
 
   const note =
     typeof noteId === "string" && UUID_PATTERN.test(noteId)

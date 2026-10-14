@@ -66,7 +66,7 @@ export function AskAIButton({ user }: { user: User | null }) {
           <DialogHeader>
             <DialogTitle>Ask AI about your notes</DialogTitle>
             <DialogDescription>
-              Answers come from Google Gemini, using only your notes.
+              Answers come from AI (via Groq), using only your notes.
             </DialogDescription>
           </DialogHeader>
 

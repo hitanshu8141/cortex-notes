@@ -1,6 +1,6 @@
 "use server";
 
-import { GoogleGenAI } from "@google/genai";
+import Groq from "groq-sdk";
 import { refresh } from "next/cache";
 
 import { prisma } from "@/db/prisma";
@@ -11,6 +11,22 @@ type ActionResult = { errorMessage: string | null };
 function handleError(error: unknown): ActionResult {
   if (error instanceof Error) return { errorMessage: error.message };
   return { errorMessage: "Something went wrong. Please try again." };
+}
+
+// Turns Groq API errors into messages a user can act on.
+function handleAIError(error: unknown): ActionResult {
+  if (error instanceof Groq.APIError) {
+    if (error.status === 401) {
+      return { errorMessage: "Ask AI's GROQ_API_KEY is invalid. Check .env.local." };
+    }
+    if (error.status === 429) {
+      return { errorMessage: "Ask AI is getting too many requests. Try again in a minute." };
+    }
+    if (error.status && error.status >= 500) {
+      return { errorMessage: "The AI service is temporarily unavailable. Try again shortly." };
+    }
+  }
+  return handleError(error);
 }
 
 async function requireUser(action: string) {
@@ -72,8 +88,8 @@ export async function askAIAction(
     // The user comes from Supabase; Prisma only loads their notes.
     const user = await requireUser("use Ask AI");
 
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error("Ask AI isn't set up yet: add GEMINI_API_KEY to .env.local.");
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error("Ask AI isn't set up yet: add GROQ_API_KEY to .env.local.");
     }
 
     const notes = await prisma.note.findMany({
@@ -90,20 +106,29 @@ export async function askAIAction(
       )
       .join("\n\n---\n\n");
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
-      contents: `Here are my notes:\n\n${formattedNotes || "(I have no notes yet.)"}\n\nQuestion: ${question}`,
-      config: {
-        systemInstruction:
-          "You are a helpful assistant that answers questions about the user's notes. " +
-          "Keep answers concise and use plain text without markdown. " +
-          "If the notes don't contain the answer, say so.",
-      },
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    const completion = await groq.chat.completions.create({
+      model: "openai/gpt-oss-20b",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a helpful assistant that answers questions about the user's notes. " +
+            "Keep answers concise and use plain text without markdown. " +
+            "If the notes don't contain the answer, say so.",
+        },
+        {
+          role: "user",
+          content: `Here are my notes:\n\n${formattedNotes || "(I have no notes yet.)"}\n\nQuestion: ${question}`,
+        },
+      ],
     });
 
-    return { errorMessage: null, answer: response.text ?? "" };
+    return {
+      errorMessage: null,
+      answer: completion.choices[0]?.message.content ?? "",
+    };
   } catch (error) {
-    return { ...handleError(error), answer: null };
+    return { ...handleAIError(error), answer: null };
   }
 }

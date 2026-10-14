@@ -8,17 +8,11 @@ import { toast } from "sonner";
 import { createNoteAction } from "@/actions/notes";
 import { Button } from "@/components/ui/button";
 
-export function NewNoteButton({ isLoggedIn }: { isLoggedIn: boolean }) {
+export function NewNoteButton() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   function handleClick() {
-    if (!isLoggedIn) {
-      toast.error("You must be logged in to create a note.");
-      router.push("/login");
-      return;
-    }
-
     startTransition(async () => {
       const noteId = crypto.randomUUID();
       const { errorMessage } = await createNoteAction(noteId);
